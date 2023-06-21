@@ -1,0 +1,131 @@
+---
+title: "Mushrooms Dataset XGBOOST and Logistic Regression with Keras"
+output:
+  html_document:
+    df_print: paged
+date: "2023-06-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Explanatory Data Analysis
+
+Let us import the dataset first. This chapter's aim is to discover the data structure and makes sense out of the dataset. 
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(Polychrome)
+
+readr::read_csv("~/Documents/Summer 2023/TidyModels/Datasets/mushrooms.csv") -> mushrooms
+
+#Factorize the variables.
+
+as.data.frame(lapply(mushrooms, as.factor)) -> mushrooms
+skimr::skim(mushrooms)
+```
+We have no missing values in the dataset. The distribution of levels are also important in the dataset. We can check the distribution of top_counts. 
+
+```{r}
+par(mfrow = c(2,4))
+
+for(i in 1:ncol(mushrooms)){
+  plot(mushrooms[,i], main = colnames(mushrooms)[i])
+}
+```
+
+Or we can take a more "colorful" approach. 
+
+```{r}
+P40 <- createPalette(40, c("#FF0000", "#00FF00", "#0000FF"), range = c(30, 80))
+names(P40) <- NULL
+pivot_longer(mushrooms, cols = !c("class"), names_to ="specs")%>%group_by(specs)%>%count(specs,value,class)%>%ggplot(mapping = aes(y = specs, fill = value, x= n)) + geom_col() +theme_minimal()+ theme(axis.text.x = element_blank(), panel.grid.minor = element_blank(), panel.grid.major = element_blank()) + scale_fill_manual(values = P40)
+```
+
+Now we can see that veil.type has a single value and no variance in the dataset. Therefore we can eliminate it from the training algorithm. 
+
+```{r}
+mushrooms%>%select(!c("veil.type")) -> mushrooms
+```
+
+We can also denote that some of the specs are not equally distributed. Therefore we can use a different grouping in our machine learning model. These columns are, 
+
+* veil.color 
+* stalk.color.below.ring (also above)
+* spore.print.color
+* habitat
+* odor
+* gill.color
+* gill. attachment
+* cap.shape
+* cap.color
+
+
+
+
+
+
+#Machine Learning
+
+## Train Test Splitting
+
+In this part we are going to train test split of our datamodel. We believe 0.75 or 0.8 split is ideal. 
+
+```{r}
+
+initial_split(mushrooms, prop = 0.75) -> mushrooms.split
+training(mushrooms.split) -> mush_train
+testing(mushrooms.split) -> mush_test
+
+str(mush_train)
+str(mush_test)
+```
+
+
+
+
+## Setting the Engines
+
+We have decided to use two approaches. One is a dense neural network for logistic regression with keras + tensorflow and the other one relies on the XGBOOST which is a extreme gradient boosting algorithm. To set our engines.
+
+```{r}
+xg_engine <- boost_tree()%>%set_engine("xgboost")%>%set_mode("classification")
+keras_engine <- logistic_reg()%>%set_engine("keras")
+```
+
+## Setting the Recipes
+
+```{r}
+rcp <- recipe(class~., mush_train)%>%step_other(veil.color, threshold = 0.03)%>%step_other(stalk.color.below.ring, threshold = 0.03)%>%step_other(stalk.color.above.ring, threshold = 0.03)%>%step_other(spore.print.color, threshold = 0.02)%>%step_other(habitat, threshold = 0.02)%>%step_other(gill.color, threshold = 0.01)%>%step_dummy(all_factor_predictors())
+```
+
+
+## Setting the Workflow
+
+```{r}
+wflow_xg <- workflow()%>%add_model(xg_engine)%>%add_recipe(rcp)
+wflow_keras <- workflow()%>%add_model(keras_engine)%>%add_recipe(rcp)
+```
+
+
+
+
+## Training the Initial Model
+
+```{r}
+fit(wflow_xg, mush_train) -> int_model_xg
+predict(int_model_xg, mush_test)$.pred_class -> mush_test$predint
+str(mush_test)
+caret::confusionMatrix(mush_test$class, mush_test$predint)
+
+fit(wflow_keras, mush_train) -> int_model_keras
+predict(int_model_keras, mush_test)$.pred_class -> mush_test$predint_k
+str(mush_test)
+caret::confusionMatrix(mush_test$class, mush_test$predint_k)
+
+```
+
+
+Actually that is enough since xgboost model has an accuracy of %100 and keras works at %99.75. These are outstanding results and we can say that our models performed exceptionally well.
