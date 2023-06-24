@@ -12,3 +12,12 @@ https://www.kaggle.com/datasets/uciml/mushroom-classification shared by UCI Mach
 Our main aim in this notebook to cover a basic approach to the machine learning. Notebook contains basic tidymodels mechanics, including workflows, recipes and model setting. Since the dataset is extremely well presented accuracy results are high over a test set. Any model improvement such as grid search and comparison of different models are not available due to accuracy rate. 
 
 <img width="1271" alt="Ekran Resmi 2023-06-22 01 30 28" src="https://github.com/welkiej7/KaggleDatasets/assets/94485797/1a35a2f7-c272-48a9-b543-e8495db964f3">
+
+## Hepatitis C Dataset
+
+The original dataset can be found in here;
+https://www.kaggle.com/datasets/wearefuture01/hepatitis-c-prediction/code
+
+Our main aim in this notebook to cover basic grid search, application of pca methods and demonstrating a good explanatory data analysis.
+
+![Ekran Resmi 2023-06-24 17 33 24](https://github.com/welkiej7/KaggleDatasets/assets/94485797/cd265624-e3eb-4df7-8b3f-05c6cb65a2aa)
